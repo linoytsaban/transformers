@@ -537,6 +537,7 @@ class SiglipSdpaAttention(SiglipAttention):
         hidden_states: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         output_attentions: Optional[bool] = False,
+        attn_scale: Optional[float] = None,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         if output_attentions:
             # TODO: Improve this warning with e.g. `model.config.attn_implementation = "manual"` once this is implemented.
@@ -584,6 +585,9 @@ class SiglipSdpaAttention(SiglipAttention):
         attn_output = attn_output.view(batch_size, q_len, self.embed_dim)
 
         attn_output = self.out_proj(attn_output)
+        print("attn_output", attn_output.shape)
+        attn_output *= attn_scale
+        print("attn_output post scaling", attn_output.shape)
 
         return attn_output, None
 
@@ -626,6 +630,7 @@ class SiglipEncoderLayer(nn.Module):
         hidden_states: torch.Tensor,
         attention_mask: torch.Tensor,
         output_attentions: Optional[bool] = False,
+        attn_scale: Optional[float] = None,
     ) -> Tuple[torch.FloatTensor]:
         """
         Args:
@@ -644,6 +649,7 @@ class SiglipEncoderLayer(nn.Module):
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             output_attentions=output_attentions,
+            attn_scale=attn_scale if attn_scale is not None else 1.0,
         )
         hidden_states = residual + hidden_states
 
@@ -852,6 +858,8 @@ class SiglipEncoder(nn.Module):
         self,
         inputs_embeds,
         attention_mask: Optional[torch.Tensor] = None,
+        attn_scale: Optional[float] = None,
+        attn_scale_layer_idx: Optional[int] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
@@ -888,7 +896,11 @@ class SiglipEncoder(nn.Module):
         all_attentions = () if output_attentions else None
 
         hidden_states = inputs_embeds
-        for encoder_layer in self.layers:
+        for layer_idx, encoder_layer in enumerate(self.layers):
+            if attn_scale_layer_idx is not None and attn_scale_layer_idx == layer_idx:
+                attn_scale = attn_scale
+            else:
+                attn_scale = 1
             if output_hidden_states:
                 encoder_states = encoder_states + (hidden_states,)
             if self.gradient_checkpointing and self.training:
@@ -897,12 +909,14 @@ class SiglipEncoder(nn.Module):
                     hidden_states,
                     attention_mask,
                     output_attentions,
+                    attn_scale=attn_scale,
                 )
             else:
                 layer_outputs = encoder_layer(
                     hidden_states,
                     attention_mask,
                     output_attentions=output_attentions,
+                    attn_scale=attn_scale,
                 )
 
             hidden_states = layer_outputs[0]
@@ -1071,6 +1085,8 @@ class SiglipVisionTransformer(nn.Module):
     def forward(
         self,
         pixel_values,
+        attn_scale: Optional[float] = None,
+        attn_scale_layer_idx: Optional[int] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
@@ -1093,6 +1109,8 @@ class SiglipVisionTransformer(nn.Module):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            attn_scale=attn_scale,
+            attn_scale_layer_idx=attn_scale_layer_idx,
         )
 
         last_hidden_state = encoder_outputs[0]

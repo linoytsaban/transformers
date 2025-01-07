@@ -585,7 +585,7 @@ class SiglipSdpaAttention(SiglipAttention):
         attn_output = attn_output.view(batch_size, q_len, self.embed_dim)
 
         attn_output = self.out_proj(attn_output)
-        print("attn_output", attn_output.shape)
+        #print("attn_output", attn_output.shape)
         attn_output *= attn_scale
         print("attn_output post scaling", attn_output.shape)
 
@@ -898,6 +898,7 @@ class SiglipEncoder(nn.Module):
         hidden_states = inputs_embeds
         for layer_idx, encoder_layer in enumerate(self.layers):
             if attn_scale_layer_idx is not None and attn_scale_layer_idx == layer_idx:
+                print(attn_scale_layer_idx, layer_idx)
                 attn_scale = attn_scale
             else:
                 attn_scale = 1
@@ -912,6 +913,7 @@ class SiglipEncoder(nn.Module):
                     attn_scale=attn_scale,
                 )
             else:
+                print("attn_scale", attn_scale)
                 layer_outputs = encoder_layer(
                     hidden_states,
                     attention_mask,

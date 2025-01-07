@@ -1176,10 +1176,13 @@ class SiglipVisionModel(SiglipPreTrainedModel):
     def forward(
         self,
         pixel_values,
+        attn_scale: Optional[float] = None,
+        attn_scale_layer_idx: Optional[int] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         interpolate_pos_encoding: bool = False,
+
     ) -> Union[Tuple, BaseModelOutputWithPooling]:
         r"""
         Returns:
@@ -1211,6 +1214,8 @@ class SiglipVisionModel(SiglipPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             interpolate_pos_encoding=interpolate_pos_encoding,
+            attn_scale=attn_scale,
+            attn_scale_layer_idx=attn_scale_layer_idx,
         )
 
 

@@ -913,7 +913,7 @@ class SiglipEncoder(nn.Module):
                     attn_scale=attn_scale,
                 )
             else:
-                print("attn_scale", attn_scale)
+                print(layer_idx, "attn_scale", attn_scale)
                 layer_outputs = encoder_layer(
                     hidden_states,
                     attention_mask,

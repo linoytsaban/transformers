@@ -1210,6 +1210,7 @@ class SiglipVisionModel(SiglipPreTrainedModel):
         ```"""
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
+        print("helloooooo", attn_scale)
         return self.vision_model(
             pixel_values=pixel_values,
             output_attentions=output_attentions,

@@ -894,11 +894,10 @@ class SiglipEncoder(nn.Module):
 
         encoder_states = () if output_hidden_states else None
         all_attentions = () if output_attentions else None
-
+        print("attn_scale", attn_scale)
         hidden_states = inputs_embeds
         for layer_idx, encoder_layer in enumerate(self.layers):
             if attn_scale_layer_idx is not None and attn_scale_layer_idx == layer_idx:
-                print(attn_scale_layer_idx, layer_idx)
                 attn_scale = attn_scale
             else:
                 attn_scale = 1
@@ -1210,7 +1209,6 @@ class SiglipVisionModel(SiglipPreTrainedModel):
         ```"""
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        print("helloooooo", attn_scale)
         return self.vision_model(
             pixel_values=pixel_values,
             output_attentions=output_attentions,

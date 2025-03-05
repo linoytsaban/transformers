@@ -608,6 +608,8 @@ class CLIPEncoderLayer(nn.Module):
         attention_mask: torch.Tensor,
         causal_attention_mask: torch.Tensor,
         output_attentions: Optional[bool] = False,
+        layer_idx: Optional[int] = None,              # Add this parameter
+        ablate_heads: Optional[list] = None,          # Add this parameter
     ) -> Tuple[torch.FloatTensor]:
         """
         Args:
@@ -618,6 +620,10 @@ class CLIPEncoderLayer(nn.Module):
             output_attentions (`bool`, *optional*):
                 Whether or not to return the attentions tensors of all attention layers. See `attentions` under
                 returned tensors for more detail.
+            layer_idx (`int`, *optional*):
+                The index of this layer in the encoder stack.
+            ablate_heads (`list`, *optional*):
+                List of tuples (layer_idx, head_idx) specifying which attention heads to ablate.
         """
         residual = hidden_states
 
@@ -627,6 +633,8 @@ class CLIPEncoderLayer(nn.Module):
             attention_mask=attention_mask,
             causal_attention_mask=causal_attention_mask,
             output_attentions=output_attentions,
+            ablate_heads=ablate_heads,
+            layer_idx=layer_idx,
         )
         hidden_states = residual + hidden_states
 

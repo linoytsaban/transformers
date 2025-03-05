@@ -330,6 +330,7 @@ class CLIPAttention(nn.Module):
             output_attentions: Optional[bool] = False,
             ablate_heads: Optional[list] = None,  # New parameter for specifying heads to ablate
             layer_idx: Optional[int] = None,  # New parameter to identify the layer index
+            attn_scale: float = 0.0,  # New parameter to scale the attention output
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """Input shape: Batch x Time x Channel"""
 
@@ -402,7 +403,7 @@ class CLIPAttention(nn.Module):
             for head_idx in range(self.num_heads):
                 if (layer_idx, head_idx) in ablate_heads:
                     # Zero out the output of this head
-                    attn_output[:, head_idx] = 0
+                    attn_output[:, head_idx] *= attn_scale
 
         attn_output = attn_output.transpose(1, 2)
         attn_output = attn_output.reshape(bsz, tgt_len, embed_dim)
@@ -514,6 +515,7 @@ class CLIPSdpaAttention(CLIPAttention):
             output_attentions: Optional[bool] = False,
             ablate_heads: Optional[list] = None,  # Add this parameter
             layer_idx: Optional[int] = None,  # Add this parameter
+            attn_scale: float = 0.0,  # New parameter to scale the attention output
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         if output_attentions:
             # TODO: Improve this warning with e.g. `model.config.attn_implementation = "manual"` once this is implemented.
@@ -530,6 +532,7 @@ class CLIPSdpaAttention(CLIPAttention):
                 output_attentions=output_attentions,
                 ablate_heads=ablate_heads,
                 layer_idx=layer_idx,
+                attn_scale=attn_scale
             )
 
         # CLIP text model uses both `causal_attention_mask` and `attention_mask`
@@ -578,7 +581,7 @@ class CLIPSdpaAttention(CLIPAttention):
             for head_idx in range(self.num_heads):
                 if (layer_idx, head_idx) in ablate_heads:
                     # Zero out the output of this head
-                    attn_output_reshaped[:, :, head_idx, :] = 0
+                    attn_output_reshaped[:, :, head_idx, :] *= attn_scale
             # Reshape back
             attn_output = attn_output_reshaped.view(bsz, tgt_len, embed_dim)
 
@@ -626,6 +629,7 @@ class CLIPEncoderLayer(nn.Module):
         output_attentions: Optional[bool] = False,
         layer_idx: Optional[int] = None,              # Add this parameter
         ablate_heads: Optional[list] = None,          # Add this parameter
+        attn_scale: float = 0.0,  # New parameter to scale the attention output
     ) -> Tuple[torch.FloatTensor]:
         """
         Args:
@@ -651,6 +655,7 @@ class CLIPEncoderLayer(nn.Module):
             output_attentions=output_attentions,
             ablate_heads=ablate_heads,
             layer_idx=layer_idx,
+            attn_scale=attn_scale
         )
         hidden_states = residual + hidden_states
 
@@ -864,6 +869,7 @@ class CLIPEncoder(nn.Module):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         ablate_heads: Optional[list] = None,  # Add this parameter
+        attn_scale: float = 0.0,  # New parameter to scale the attention output
     ) -> Union[Tuple, BaseModelOutput]:
         r"""
         Args:
@@ -918,6 +924,7 @@ class CLIPEncoder(nn.Module):
                     output_attentions,
                     idx,  # Pass layer index
                     ablate_heads,  # Pass ablation list
+                    attn_scale
                 )
             else:
                 layer_outputs = encoder_layer(
@@ -927,6 +934,7 @@ class CLIPEncoder(nn.Module):
                     output_attentions=output_attentions,
                     layer_idx=idx,  # Pass layer index
                     ablate_heads=ablate_heads,  # Pass ablation list
+                    attn_scale=attn_scale
                 )
 
             hidden_states = layer_outputs[0]
@@ -1126,6 +1134,7 @@ class CLIPVisionTransformer(nn.Module):
         return_dict: Optional[bool] = None,
         interpolate_pos_encoding: Optional[bool] = False,
         ablate_heads: Optional[list] = None,  # New parameter for head ablation
+        attn_scale: float = 0.0,  # New parameter to scale the attention output
     ) -> Union[Tuple, BaseModelOutputWithPooling]:
         r"""
         Returns:
@@ -1149,6 +1158,7 @@ class CLIPVisionTransformer(nn.Module):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             ablate_heads=ablate_heads,  # Pass ablation list to encoder
+            attn_scale=attn_scale,
         )
 
         last_hidden_state = encoder_outputs[0]
@@ -1325,6 +1335,8 @@ class CLIPModel(CLIPPreTrainedModel):
             interpolate_pos_encoding: bool = False,
             return_dict: Optional[bool] = None,
             ablate_heads: Optional[list] = None,  # Add this parameter
+            attn_scale: float = 0.0,  # New parameter to scale the attention output
+
     ) -> torch.FloatTensor:
         r"""
         Returns:
@@ -1362,6 +1374,7 @@ class CLIPModel(CLIPPreTrainedModel):
             interpolate_pos_encoding=interpolate_pos_encoding,
             return_dict=return_dict,
             ablate_heads=ablate_heads,  # Pass ablation list to vision model
+            attn_scale=attn_scale,
         )
 
         pooled_output = vision_outputs[1]  # pooled_output

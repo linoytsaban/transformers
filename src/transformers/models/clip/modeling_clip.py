@@ -1318,12 +1318,13 @@ class CLIPModel(CLIPPreTrainedModel):
 
     @add_start_docstrings_to_model_forward(CLIP_VISION_INPUTS_DOCSTRING)
     def get_image_features(
-        self,
-        pixel_values: Optional[torch.FloatTensor] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        interpolate_pos_encoding: bool = False,
-        return_dict: Optional[bool] = None,
+            self,
+            pixel_values: Optional[torch.FloatTensor] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            interpolate_pos_encoding: bool = False,
+            return_dict: Optional[bool] = None,
+            ablate_heads: Optional[list] = None,  # Add this parameter
     ) -> torch.FloatTensor:
         r"""
         Returns:
@@ -1360,6 +1361,7 @@ class CLIPModel(CLIPPreTrainedModel):
             output_hidden_states=output_hidden_states,
             interpolate_pos_encoding=interpolate_pos_encoding,
             return_dict=return_dict,
+            ablate_heads=ablate_heads,  # Pass ablation list to vision model
         )
 
         pooled_output = vision_outputs[1]  # pooled_output

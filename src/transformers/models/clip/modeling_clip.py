@@ -1162,6 +1162,7 @@ class CLIPVisionModel(CLIPPreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         interpolate_pos_encoding: bool = False,
         return_dict: Optional[bool] = None,
+        ablate_heads: Optional[list] = None,  # New parameter for head ablation
     ) -> Union[Tuple, BaseModelOutputWithPooling]:
         r"""
         Returns:
@@ -1193,6 +1194,7 @@ class CLIPVisionModel(CLIPPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             interpolate_pos_encoding=interpolate_pos_encoding,
+            ablate_heads=ablate_heads,  # Pass ablation list to vision model
         )
 
 

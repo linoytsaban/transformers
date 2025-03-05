@@ -1094,6 +1094,7 @@ class CLIPVisionTransformer(nn.Module):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         interpolate_pos_encoding: Optional[bool] = False,
+        ablate_heads: Optional[list] = None,  # New parameter for head ablation
     ) -> Union[Tuple, BaseModelOutputWithPooling]:
         r"""
         Returns:
@@ -1116,6 +1117,7 @@ class CLIPVisionTransformer(nn.Module):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            ablate_heads=ablate_heads,  # Pass ablation list to encoder
         )
 
         last_hidden_state = encoder_outputs[0]

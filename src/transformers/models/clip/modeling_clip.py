@@ -507,11 +507,13 @@ class CLIPSdpaAttention(CLIPAttention):
 
     # Adapted from CLIPAttention.forward
     def forward(
-        self,
-        hidden_states: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        causal_attention_mask: Optional[torch.Tensor] = None,
-        output_attentions: Optional[bool] = False,
+            self,
+            hidden_states: torch.Tensor,
+            attention_mask: Optional[torch.Tensor] = None,
+            causal_attention_mask: Optional[torch.Tensor] = None,
+            output_attentions: Optional[bool] = False,
+            ablate_heads: Optional[list] = None,  # Add this parameter
+            layer_idx: Optional[int] = None,  # Add this parameter
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         if output_attentions:
             # TODO: Improve this warning with e.g. `model.config.attn_implementation = "manual"` once this is implemented.
@@ -526,6 +528,8 @@ class CLIPSdpaAttention(CLIPAttention):
                 attention_mask=attention_mask,
                 causal_attention_mask=causal_attention_mask,
                 output_attentions=output_attentions,
+                ablate_heads=ablate_heads,
+                layer_idx=layer_idx,
             )
 
         # CLIP text model uses both `causal_attention_mask` and `attention_mask`
@@ -565,6 +569,18 @@ class CLIPSdpaAttention(CLIPAttention):
 
         attn_output = attn_output.transpose(1, 2)
         attn_output = attn_output.reshape(bsz, tgt_len, embed_dim)
+
+        # Apply head ablation if specified - add ablation here
+        if ablate_heads is not None and layer_idx is not None:
+            # Need to reshape for ablation
+            attn_output_reshaped = attn_output.view(bsz, tgt_len, self.num_heads, self.head_dim)
+            # Check if any heads in this layer should be ablated
+            for head_idx in range(self.num_heads):
+                if (layer_idx, head_idx) in ablate_heads:
+                    # Zero out the output of this head
+                    attn_output_reshaped[:, :, head_idx, :] = 0
+            # Reshape back
+            attn_output = attn_output_reshaped.view(bsz, tgt_len, embed_dim)
 
         attn_output = self.out_proj(attn_output)
 

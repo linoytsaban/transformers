@@ -847,6 +847,7 @@ class CLIPEncoder(nn.Module):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        ablate_heads: Optional[list] = None,  # Add this parameter
     ) -> Union[Tuple, BaseModelOutput]:
         r"""
         Args:
@@ -876,6 +877,8 @@ class CLIPEncoder(nn.Module):
                 for more detail.
             return_dict (`bool`, *optional*):
                 Whether or not to return a [`~utils.ModelOutput`] instead of a plain tuple.
+            ablate_heads (`list`, *optional*):
+                List of tuples (layer_idx, head_idx) specifying which attention heads to ablate.
         """
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -897,6 +900,8 @@ class CLIPEncoder(nn.Module):
                     attention_mask,
                     causal_attention_mask,
                     output_attentions,
+                    idx,  # Pass layer index
+                    ablate_heads,  # Pass ablation list
                 )
             else:
                 layer_outputs = encoder_layer(
@@ -904,6 +909,8 @@ class CLIPEncoder(nn.Module):
                     attention_mask,
                     causal_attention_mask,
                     output_attentions=output_attentions,
+                    layer_idx=idx,  # Pass layer index
+                    ablate_heads=ablate_heads,  # Pass ablation list
                 )
 
             hidden_states = layer_outputs[0]

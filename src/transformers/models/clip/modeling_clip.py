@@ -323,11 +323,13 @@ class CLIPAttention(nn.Module):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
 
     def forward(
-        self,
-        hidden_states: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        causal_attention_mask: Optional[torch.Tensor] = None,
-        output_attentions: Optional[bool] = False,
+            self,
+            hidden_states: torch.Tensor,
+            attention_mask: Optional[torch.Tensor] = None,
+            causal_attention_mask: Optional[torch.Tensor] = None,
+            output_attentions: Optional[bool] = False,
+            ablate_heads: Optional[list] = None,  # New parameter for specifying heads to ablate
+            layer_idx: Optional[int] = None,  # New parameter to identify the layer index
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """Input shape: Batch x Time x Channel"""
 
@@ -393,6 +395,15 @@ class CLIPAttention(nn.Module):
             )
 
         attn_output = attn_output.view(bsz, self.num_heads, tgt_len, self.head_dim)
+
+        # Apply head ablation if specified
+        if ablate_heads is not None and layer_idx is not None:
+            # Check if any heads in this layer should be ablated
+            for head_idx in range(self.num_heads):
+                if (layer_idx, head_idx) in ablate_heads:
+                    # Zero out the output of this head
+                    attn_output[:, head_idx] = 0
+
         attn_output = attn_output.transpose(1, 2)
         attn_output = attn_output.reshape(bsz, tgt_len, embed_dim)
 
